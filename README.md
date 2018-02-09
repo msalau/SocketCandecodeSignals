@@ -3,24 +3,24 @@ filter to decode signals in combination with candump (socketcan tools)
 
 # clone #
 ```
-git clone  https://github.com/ebroecker/SocketCandecodeSignals
+git clone  https://github.com/ebroecker/candecodes
 git submodule update --init
 ```
 or
 ```
-git clone --recursive https://github.com/ebroecker/SocketCandecodeSignals
+git clone --recursive https://github.com/ebroecker/candecodes
 ```
 
 # Compile #
-```gcc -g -o socketcanDecodeSignal main.c datenbasis.c processFrame.c lib.c```
+```make```
 
 ## Usage ##
 ```
-candump -L canBus | ./socketcanDecodeSignal dbc-file frameName[.signalName] [secondFrame[.someSignal] ...]
+candump -L canBus | ./candecode dbc-file frameName[.signalName] [secondFrame[.someSignal] ...]
 ```
 ***Example***
 ```
-candump -L vcan0 | ./socketcanDecodeSignal ccl_test.dbc testFrame1.sig0 testFrame2
+candump -L vcan0 | ./candecode ccl_test.dbc testFrame1.sig0 testFrame2
 ```
 
 # Test #
@@ -33,7 +33,7 @@ sudo ifconfig vcan0 up
 
 ***dump vcan0 with signal decoding:***
 ```
-candump -L vcan0 | ./socketcanDecodeSignal ccl_test.dbc testFrame1 testFrame2
+candump -L vcan0 | ./candecode ccl_test.dbc testFrame1 testFrame2
 ```
 
 ***send some can frames (other terminal)***
@@ -76,7 +76,7 @@ Trying to find: Frame: testFrame2
 
 ***Test without virtual can:***
 ```
-echo "(0.0) vcan0 001#8d00100100820100" | ./socketcanDecodeSignal ccl_test.dbc testFrame1
+echo "(0.0) vcan0 001#8d00100100820100" | ./candecode ccl_test.dbc testFrame1
 ```
 
 ```
@@ -96,7 +96,7 @@ Trying to find: Frame: testFrame1
 ```
 
 ```
-echo "(0.0) vcan0 001#8d00100100820100" | ./socketcanDecodeSignal ccl_test.dbc testFrame1
+echo "(0.0) vcan0 001#8d00100100820100" | ./candecode ccl_test.dbc testFrame1
 ```
 
 ```
