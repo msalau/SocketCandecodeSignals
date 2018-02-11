@@ -1,54 +1,83 @@
+/**
+ * @file main.c
+ *
+ * candecode App
+ */
+
+/**
+Section: Included Files
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "dbc.h"
 #include "processFrame.h"
 
-// echo "(0.0) vcan0 001#8d00100100820100" | ./socketcanDecodeSignal ccl_test.dbc testFrame1
-// echo "(0.1) vcan0 002#0C00057003CD1F83" | ./socketcanDecodeSignal ccl_test.dbc testFrame2
-void printCallback(char *name, __u64 rawValue, double scaledValue,
-		struct timeval tv, char *device)
+/**
+Section: Definitions
+*/
+
+#define MAX_LINE_SIZE 100
+#define MAX_DEVICE_NAME 100
+#define MAX_ASC_FRAME 100
+
+/**
+Section: Implementation
+*/
+
+void printCallback(char *name, __u64 rawValue, double scaledValue, struct timeval tv, char *device)
 {
-	printf("(%04ld.%06ld) %s %s: 0x%02llx %02.0f \n", tv.tv_sec, tv.tv_usec,
-			device, name, rawValue, scaledValue);
+	if (NULL == name)
+	{
+		printf("(%04ld.%06ld) %s: Frame 0x%02llx not found\n", tv.tv_sec, tv.tv_usec, device, rawValue);
+	}
+	else
+	{
+		printf("(%04ld.%06ld) %s %s: 0x%02llx %f\n", tv.tv_sec, tv.tv_usec, device, name, rawValue, scaledValue);
+	}
 }
 
 int main(int argc, char **argv)
 {
-	char buf[100], device[100], ascframe[100];
+	int process_all = 0;
+	char buf[MAX_LINE_SIZE], device[MAX_DEVICE_NAME], ascframe[MAX_ASC_FRAME];
 
 	char *frameName, *signalName;
 	struct can_frame cf;
+	struct timeval tv;
 
 	Dbc_Frame_t *dataBase = NULL;
-	struct signal_callback_list *callbackList = NULL;
-
+	signal_callback_list_t *callbackList = NULL;
 	Dbc_Signal_t *mySignal;
 	Dbc_Frame_t *myFrame;
-	struct timeval tv;
 
 	if (argc < 2)
 	{
 		fprintf(stderr, "Usage:\n");
-		fprintf(stderr,
-				"%s Database Message1.Signal1 [Message2.Signal2 Message3.Signal3]\n",
-				argv[0]);
-		exit(1);
+		fprintf(stderr, "%s Database all  # processes all frames\n", argv[0]);
+		fprintf(stderr, "%s Database Message1.Signal1 [Message2.Signal2 Message3.Signal3]\n", argv[0]);
+		exit(EXIT_FAILURE);
 	}
 
-	// read dbc
+	/* Read DBC */
 	if (Dbc_Init(&dataBase, argv[1]))
 	{
-		fprintf(stderr, "Error opening Database %s\n", argv[1]);
-		exit(1);
+		fprintf(stderr, "[ERROR] Unable to open database %s\n", argv[1]);
+		exit(EXIT_FAILURE);
 	}
 	argc--;
 	argv++;
 
-	// parse arguments (frames/signals which should be decoded)
+	/* Parse arguments (frames/signals which should be decoded) */
 	while (argc >= 2)
 	{
-
 		frameName = argv[1];
+		if (strcmp(frameName, "all") == 0)
+		{
+			process_all = 1;
+			break;
+		}
+
 		signalName = strchr(argv[1], '.');
 
 		printf("Trying to find: Frame: %s", frameName);
@@ -63,8 +92,8 @@ int main(int argc, char **argv)
 
 		if (!myFrame)
 		{
-			fprintf(stderr, "Error finding Frame %s\n", frameName);
-			exit(1);
+			fprintf(stderr, "[ERROR] Unable to find frame %s\n", frameName);
+			exit(EXIT_FAILURE);
 		}
 
 		if (NULL != signalName)
@@ -72,8 +101,8 @@ int main(int argc, char **argv)
 			mySignal = Dbc_FindSignalByName(myFrame, signalName);
 			if (!mySignal)
 			{
-				fprintf(stderr, "Error finding Signal %s\n", signalName);
-				exit(1);
+				fprintf(stderr, "[ERROR] Unable to find signal %s\n", signalName);
+				exit(EXIT_FAILURE);
 			}
 		}
 		else
@@ -84,28 +113,30 @@ int main(int argc, char **argv)
 
 		printf("-- %s (0x%03x) ", myFrame->name, myFrame->canID);
 		if (signalName != NULL)
-			printf(" %s (%d [%d]) --", mySignal->name, mySignal->startBit,
-					mySignal->signalLength);
+			printf(" %s (%d [%d]) --", mySignal->name, mySignal->startBit, mySignal->signalLength);
 		printf("\n");
 		argc--;
 		argv++;
 	}
 
-	while (fgets(buf, 99, stdin))
+	while (fgets(buf, MAX_LINE_SIZE - 1, stdin))
 	{
 
-		if (sscanf(buf, "(%ld.%ld) %s %s", &tv.tv_sec, &tv.tv_usec, device,
-				ascframe) != 4)
+		if (sscanf(buf, "(%ld.%ld) %s %s", &tv.tv_sec, &tv.tv_usec, device, ascframe) != 4)
 		{
-			fprintf(stderr, "incorrect line format in logfile\n");
-			return 1;
+			fprintf(stderr, "[ERROR] Incorrect line format in logfile\n");
+			exit(EXIT_FAILURE);
 		}
-
 		if (parse_canframe(ascframe, &cf))
 		{
-			return 1;
+			fprintf(stderr, "[ERROR] Unable to parse CAN frame from ASCII representation\n");
+			exit(EXIT_FAILURE);
 		}
-		processFrame(callbackList, &cf, tv, device);
+
+		if (process_all)
+			processAllFrames(dataBase, printCallback, &cf, tv, device);
+		else
+			processFrame(callbackList, &cf, tv, device);
 	}
 
 	return 0;

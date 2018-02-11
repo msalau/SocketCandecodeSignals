@@ -1,19 +1,26 @@
+/**
+ * @file processFrame.c
+ *
+ * Process Messages and Signals
+ */
+
+/**
+Section: Included Files
+*/
+
 #include <stdio.h>
 #include "processFrame.h"
 #include "stdbool.h"
 #include "libcan-encode-decode/include/can_encode_decode_inl.h"
 
-float toPhysicalValue(uint64_t target, float factor, float offset,
-bool is_signed);
+float toPhysicalValue(uint64_t target, float factor, float offset, bool is_signed);
 uint64_t extractSignal(const uint8_t* frame, const uint8_t startbit, const uint8_t length, bool is_big_endian, bool is_signed);
 
-void add_callback(struct signal_callback_list **callbackList, Dbc_Frame_t *frame, Dbc_Signal_t *signal,
-		void (*callback)(char *, __u64, double, struct timeval, char *device), __u8 onChange)
+void add_callback(signal_callback_list_t **callbackList, Dbc_Frame_t *frame, Dbc_Signal_t *signal, callback_t callback, __u8 onChange)
 {
+	signal_callback_list_t *callbackItem;
 
-	struct signal_callback_list *callbackItem;
-
-	callbackItem = malloc(sizeof(struct signal_callback_list));
+	callbackItem = malloc(sizeof(signal_callback_list_t));
 	callbackItem->frame = frame;
 	callbackItem->signal = signal;
 	callbackItem->callback = callback;
@@ -23,24 +30,86 @@ void add_callback(struct signal_callback_list **callbackList, Dbc_Frame_t *frame
 	HASH_ADD_INT(*callbackList, signal, callbackItem);
 }
 
-void processFrame(struct signal_callback_list *callbackList, struct can_frame *cf, struct timeval tv, char *device)
+void processAllFrames(Dbc_Frame_t *frames, callback_t callback, struct can_frame *cf, struct timeval tv, char *device)
 {
-	struct signal_callback_list *callbackItem;
+	Dbc_Frame_t *frame;
+	Dbc_Signal_t *signal;
+	__u64 value = 0;
+	double scaled = 0.;
+	unsigned int muxerVal = 0;
+	int frame_found = 0;
+
+	for (frame = frames; frame != NULL; frame = frame->hh.next)
+	{
+		/* Matching CAN frame */
+		if (frame->canID == cf->can_id)
+		{
+			frame_found = 1;
+
+			if (frame->isMultiplexed)
+			{
+				/* Find multiplexer */
+				for (signal = frame->signals; signal != NULL; signal = signal->hh.next)
+				{
+					if (DBC_MUX_DEFINE == signal->isMultiplexer)
+					{
+						muxerVal = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
+						scaled = toPhysicalValue(muxerVal, signal->factor, signal->offset, signal->is_signed);
+						callback(signal->name, muxerVal, scaled, tv, device);
+						break;
+					}
+				}
+
+				for (signal = frame->signals; signal != NULL; signal = signal->hh.next)
+				{
+					/* decode not multiplexed signals and signals with correct muxVal */
+					if (DBC_MUX_NONE == signal->isMultiplexer || (DBC_MUX_DATA == signal->isMultiplexer && signal->muxId == muxerVal))
+					{
+						value = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
+						scaled = toPhysicalValue(value, signal->factor, signal->offset, signal->is_signed);
+						callback(signal->name, value, scaled, tv, device);
+					}
+				}
+			}
+			else
+			{
+				for (signal = frame->signals; signal != NULL; signal = signal->hh.next)
+				{
+					value = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
+					scaled = toPhysicalValue(value, signal->factor, signal->offset, signal->is_signed);
+					callback(signal->name, value, scaled, tv, device);
+				}
+			}
+		}
+	}
+
+	if (!frame_found)
+	{
+		value = cf->can_id;  /* place frame ID in actual value (dirty hack) */
+		callback(NULL, value, scaled, tv, device);
+	}
+}
+
+void processFrame(signal_callback_list_t *callbackList, struct can_frame *cf, struct timeval tv, char *device)
+{
+	signal_callback_list_t *callbackItem;
 	Dbc_Signal_t *signal;
 	__u64 value = 0;
 	double scaled = 0.;
 	unsigned int muxerVal = 0;
 
+	/* Iterate through all callback elements */
 	for (callbackItem = callbackList; callbackItem != NULL; callbackItem = callbackItem->hh.next)
 	{
+		/* Matching CAN frame */
 		if (callbackItem->frame->canID == cf->can_id)
 		{
 			if (callbackItem->frame->isMultiplexed)
 			{
-				// find multiplexer:
+				/* Find multiplexer */
 				for (signal = callbackItem->frame->signals; signal != NULL; signal = signal->hh.next)
 				{
-					if (1 == signal->isMultiplexer)
+					if (DBC_MUX_DEFINE == signal->isMultiplexer)
 					{
 						muxerVal = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
 						scaled = toPhysicalValue(muxerVal, signal->factor, signal->offset, signal->is_signed);
@@ -52,12 +121,14 @@ void processFrame(struct signal_callback_list *callbackList, struct can_frame *c
 
 			if (callbackItem->signal == NULL)
 			{
+				/* Process all signals in message */
+
 				if (callbackItem->frame->isMultiplexed)
 				{
 					for (signal = callbackItem->frame->signals; signal != NULL; signal = signal->hh.next)
 					{
-						// decode not multiplexed signals and signals with correct muxVal
-						if (0 == signal->isMultiplexer || (2 == signal->isMultiplexer && signal->muxId == muxerVal))
+						/* decode not multiplexed signals and signals with correct muxVal */
+						if (DBC_MUX_NONE == signal->isMultiplexer || (DBC_MUX_DATA == signal->isMultiplexer && signal->muxId == muxerVal))
 						{
 							value = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
 							scaled = toPhysicalValue(value, signal->factor, signal->offset, signal->is_signed);
@@ -80,7 +151,7 @@ void processFrame(struct signal_callback_list *callbackList, struct can_frame *c
 			{
 				if (callbackItem->frame->isMultiplexed)
 				{
-					if (0 == callbackItem->signal->isMultiplexer || (2 == callbackItem->signal->isMultiplexer && callbackItem->signal->muxId == muxerVal))
+					if (DBC_MUX_NONE == callbackItem->signal->isMultiplexer || (DBC_MUX_DATA == callbackItem->signal->isMultiplexer && callbackItem->signal->muxId == muxerVal))
 					{
 						value = extractSignal(cf->data, callbackItem->signal->startBit, callbackItem->signal->signalLength, (bool) callbackItem->signal->is_big_endian,
 								callbackItem->signal->is_signed);
@@ -104,5 +175,3 @@ void processFrame(struct signal_callback_list *callbackList, struct can_frame *c
 		}
 	}
 }
-
-
