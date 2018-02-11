@@ -7,7 +7,7 @@ float toPhysicalValue(uint64_t target, float factor, float offset,
 bool is_signed);
 uint64_t extractSignal(const uint8_t* frame, const uint8_t startbit, const uint8_t length, bool is_big_endian, bool is_signed);
 
-void add_callback(struct signal_callback_list **callbackList, struct frame_struct *frame, struct signal_struct *signal,
+void add_callback(struct signal_callback_list **callbackList, Dbc_Frame_t *frame, Dbc_Signal_t *signal,
 		void (*callback)(char *, __u64, double, struct timeval, char *device), __u8 onChange)
 {
 
@@ -26,7 +26,7 @@ void add_callback(struct signal_callback_list **callbackList, struct frame_struc
 void processFrame(struct signal_callback_list *callbackList, struct can_frame *cf, struct timeval tv, char *device)
 {
 	struct signal_callback_list *callbackItem;
-	struct signal_struct *signal;
+	Dbc_Signal_t *signal;
 	__u64 value = 0;
 	double scaled = 0.;
 	unsigned int muxerVal = 0;

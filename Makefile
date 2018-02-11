@@ -30,6 +30,8 @@ $(BIN) : $(OBJ)
 $(BUILD_DIR)/%.o : %.c
 	$(CC) $(CC_FLAGS) -MMD -c $< -o $@
 
-.PHONY : clean
+install:
+	cp -f $(BIN) /usr/local/bin
+
 clean :
 	rm $(BIN) $(OBJ) $(DEP)

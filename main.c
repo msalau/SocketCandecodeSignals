@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "datenbasis.h"
+#include "dbc.h"
 #include "processFrame.h"
 
 // echo "(0.0) vcan0 001#8d00100100820100" | ./socketcanDecodeSignal ccl_test.dbc testFrame1
@@ -19,11 +19,11 @@ int main(int argc, char **argv)
 	char *frameName, *signalName;
 	struct can_frame cf;
 
-	struct frame_struct *dataBase = NULL;
+	Dbc_Frame_t *dataBase = NULL;
 	struct signal_callback_list *callbackList = NULL;
 
-	struct signal_struct *mySignal;
-	struct frame_struct *myFrame;
+	Dbc_Signal_t *mySignal;
+	Dbc_Frame_t *myFrame;
 	struct timeval tv;
 
 	if (argc < 2)
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 	}
 
 	// read dbc
-	if (readInDatabase(&dataBase, argv[1]))
+	if (Dbc_Init(&dataBase, argv[1]))
 	{
 		fprintf(stderr, "Error opening Database %s\n", argv[1]);
 		exit(1);
@@ -59,7 +59,7 @@ int main(int argc, char **argv)
 			printf(", Signal: %s", signalName);
 		}
 		printf("\n");
-		myFrame = find_frame_by_name(dataBase, frameName);
+		myFrame = Dbc_FindFrameByName(dataBase, frameName);
 
 		if (!myFrame)
 		{
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 
 		if (NULL != signalName)
 		{
-			mySignal = find_signal_by_name(myFrame, signalName);
+			mySignal = Dbc_FindSignalByName(myFrame, signalName);
 			if (!mySignal)
 			{
 				fprintf(stderr, "Error finding Signal %s\n", signalName);
