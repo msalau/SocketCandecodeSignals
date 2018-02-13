@@ -140,5 +140,6 @@ int main(int argc, char **argv)
 	}
 
 	Dbc_DeInit(database);
+	delete_callbacks(callbackList);
 	return 0;
 }

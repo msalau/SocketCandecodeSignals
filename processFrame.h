@@ -23,6 +23,7 @@ typedef struct
 } signal_callback_list_t;
 
 void add_callback(signal_callback_list_t **callbackList, Dbc_Frame_t *frame, Dbc_Signal_t *signal, callback_t callback, __u8 onChange);
+void delete_callbacks(signal_callback_list_t *callbackList);
 void processAllFrames(Dbc_Frame_t *frames, callback_t callback, struct can_frame *cf, struct timeval tv, char *device);
 void processFrame(signal_callback_list_t *callbackList, struct can_frame *cf, struct timeval tv, char *device);
 

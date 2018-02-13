@@ -9,6 +9,7 @@ Section: Included Files
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "processFrame.h"
 #include "stdbool.h"
 #include "libcan-encode-decode/include/can_encode_decode_inl.h"
@@ -28,6 +29,17 @@ void add_callback(signal_callback_list_t **callbackList, Dbc_Frame_t *frame, Dbc
 	callbackItem->onChange = onChange;
 
 	HASH_ADD_INT(*callbackList, signal, callbackItem);
+}
+
+void delete_callbacks(signal_callback_list_t *callbackList)
+{
+	signal_callback_list_t *callback, *callback_tmp;
+
+	HASH_ITER(hh, callbackList, callback, callback_tmp)
+	{
+		HASH_DEL(callbackList, callback);
+		free(callback);
+	}
 }
 
 void processAllFrames(Dbc_Frame_t *frames, callback_t callback, struct can_frame *cf, struct timeval tv, char *device)
