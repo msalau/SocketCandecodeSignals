@@ -17,6 +17,18 @@ Section: Included Files
 Section: Private functions
 */
 
+/**
+ * @brief      If Big Endian this function will recompute the start bit
+ * 
+ * Code is from:
+ * https://github.com/julietkilo/CANBabel/blob/master/src/main/java/com/github/canbabel/canio/dbc/DbcReader.java
+ *
+ * @param[in]  byteOrder     The byte order
+ * @param[in]  startBit      The start bit
+ * @param[in]  signalLength  The signal length
+ *
+ * @return     New start bit (if Big Endian); unchanged start bit otherwise
+ */
 static int Dbc_ProcessStartBit(int byteOrder, int startBit, int signalLength);
 
 /**
@@ -137,18 +149,6 @@ void Dbc_AddSignal(
     HASH_ADD_STR(frame->signals, name, newSignal);
 }
 
-/**
- * @brief      If Big Endian this function will recompute the start bit
- * 
- * Code is from:
- * https://github.com/julietkilo/CANBabel/blob/master/src/main/java/com/github/canbabel/canio/dbc/DbcReader.java
- *
- * @param[in]  byteOrder     The byte order
- * @param[in]  startBit      The start bit
- * @param[in]  signalLength  The signal length
- *
- * @return     New start bit (if Big Endian); unchanged start bit otherwise
- */
 static int Dbc_ProcessStartBit(int byteOrder, int startBit, int signalLength)
 {
     if (byteOrder == DBC_BO_BIG_ENDIAN)
@@ -252,4 +252,21 @@ int32_t Dbc_Init(Dbc_Frame_t **db, char *dbcFilePath)
 
     fclose(fp);
     return 0;
+}
+
+void Dbc_DeInit(Dbc_Frame_t *db)
+{
+    Dbc_Frame_t *frame, *frame_tmp;
+    Dbc_Signal_t *signal, *signal_tmp;
+
+    HASH_ITER(hh, db, frame, frame_tmp)
+    {
+        HASH_ITER(hh, frame->signals, signal, signal_tmp)
+        {
+            HASH_DEL(frame->signals, signal);
+            free(signal);
+        }
+        HASH_DEL(db, frame);
+        free(frame);
+    }
 }

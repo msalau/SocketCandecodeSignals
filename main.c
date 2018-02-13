@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 	struct can_frame cf;
 	struct timeval tv;
 
-	Dbc_Frame_t *dataBase = NULL;
+	Dbc_Frame_t *database = NULL;
 	signal_callback_list_t *callbackList = NULL;
 	Dbc_Signal_t *mySignal;
 	Dbc_Frame_t *myFrame;
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Read DBC */
-	if (Dbc_Init(&dataBase, argv[1]))
+	if (Dbc_Init(&database, argv[1]))
 	{
 		fprintf(stderr, "[ERROR] Unable to open database %s\n", argv[1]);
 		exit(EXIT_FAILURE);
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 			printf(", Signal: %s", signalName);
 		}
 		printf("\n");
-		myFrame = Dbc_FindFrameByName(dataBase, frameName);
+		myFrame = Dbc_FindFrameByName(database, frameName);
 
 		if (!myFrame)
 		{
@@ -134,10 +134,11 @@ int main(int argc, char **argv)
 		}
 
 		if (process_all)
-			processAllFrames(dataBase, printCallback, &cf, tv, device);
+			processAllFrames(database, printCallback, &cf, tv, device);
 		else
 			processFrame(callbackList, &cf, tv, device);
 	}
 
+	Dbc_DeInit(database);
 	return 0;
 }

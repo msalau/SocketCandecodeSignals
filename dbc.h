@@ -82,7 +82,22 @@ typedef struct
 Section: Public Function Declarations
 */
 
+/**
+ * @brief      Reads a .dbc file and extracts all info in db parameter
+ *
+ * @param      db[out]          The database
+ * @param      dbcFilePath[in]  The dbc file path
+ *
+ * @return     0 on success and a negative value otherwise
+ */
 int32_t Dbc_Init(Dbc_Frame_t **db, char *dbcFilePath);
+
+/**
+ * @brief      Free all memory taken by frame and signal descriptions
+ *
+ * @param[in]  db    The database
+ */
+void Dbc_DeInit(Dbc_Frame_t *db);
 
 Dbc_Frame_t *Dbc_FindFrame(Dbc_Frame_t *frame_list, int canID);
 Dbc_Frame_t *Dbc_FindFrameByName(Dbc_Frame_t *frame_list, char *name);
