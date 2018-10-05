@@ -9,7 +9,7 @@
 
 #include "dbc.h"
 
-typedef void (*callback_t)(char *, __u64, double, struct timeval, char *device);
+typedef void (*callback_t)(char *, __u64, const char *, double, struct timeval, char *device);
 
 typedef struct
 {

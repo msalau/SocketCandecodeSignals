@@ -49,6 +49,7 @@ void processAllFrames(Dbc_Frame_t *frames, callback_t callback, struct can_frame
 	__u64 value = 0;
 	double scaled = 0.;
 	unsigned int muxerVal = 0;
+	const char *stringVal = NULL;
 	int frame_found = 0;
 
 	for (frame = frames; frame != NULL; frame = frame->hh.next)
@@ -67,7 +68,8 @@ void processAllFrames(Dbc_Frame_t *frames, callback_t callback, struct can_frame
 					{
 						muxerVal = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
 						scaled = toPhysicalValue(muxerVal, signal->factor, signal->offset, signal->is_signed);
-						callback(signal->name, muxerVal, scaled, tv, device);
+						stringVal = Dbc_FindValueString(signal, muxerVal);
+						callback(signal->name, muxerVal, stringVal, scaled, tv, device);
 						break;
 					}
 				}
@@ -79,7 +81,8 @@ void processAllFrames(Dbc_Frame_t *frames, callback_t callback, struct can_frame
 					{
 						value = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
 						scaled = toPhysicalValue(value, signal->factor, signal->offset, signal->is_signed);
-						callback(signal->name, value, scaled, tv, device);
+						stringVal = Dbc_FindValueString(signal, value);
+						callback(signal->name, value, stringVal, scaled, tv, device);
 					}
 				}
 			}
@@ -89,7 +92,8 @@ void processAllFrames(Dbc_Frame_t *frames, callback_t callback, struct can_frame
 				{
 					value = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
 					scaled = toPhysicalValue(value, signal->factor, signal->offset, signal->is_signed);
-					callback(signal->name, value, scaled, tv, device);
+					stringVal = Dbc_FindValueString(signal, value);
+					callback(signal->name, value, stringVal, scaled, tv, device);
 				}
 			}
 		}
@@ -98,7 +102,7 @@ void processAllFrames(Dbc_Frame_t *frames, callback_t callback, struct can_frame
 	if (!frame_found)
 	{
 		value = cf->can_id;  /* place frame ID in actual value (dirty hack) */
-		callback(NULL, value, scaled, tv, device);
+		callback(NULL, value, NULL, scaled, tv, device);
 	}
 }
 
@@ -108,6 +112,7 @@ void processFrame(signal_callback_list_t *callbackList, struct can_frame *cf, st
 	Dbc_Signal_t *signal;
 	__u64 value = 0;
 	double scaled = 0.;
+	const char *stringVal = NULL;
 	unsigned int muxerVal = 0;
 
 	/* Iterate through all callback elements */
@@ -125,7 +130,8 @@ void processFrame(signal_callback_list_t *callbackList, struct can_frame *cf, st
 					{
 						muxerVal = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
 						scaled = toPhysicalValue(muxerVal, signal->factor, signal->offset, signal->is_signed);
-						(callbackItem->callback)(signal->name, muxerVal, scaled, tv, device);
+						stringVal = Dbc_FindValueString(signal, muxerVal);
+						(callbackItem->callback)(signal->name, muxerVal, stringVal, scaled, tv, device);
 						break;
 					}
 				}
@@ -144,7 +150,8 @@ void processFrame(signal_callback_list_t *callbackList, struct can_frame *cf, st
 						{
 							value = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
 							scaled = toPhysicalValue(value, signal->factor, signal->offset, signal->is_signed);
-							(callbackItem->callback)(signal->name, value, scaled, tv, device);
+							stringVal = Dbc_FindValueString(signal, value);
+							(callbackItem->callback)(signal->name, value, stringVal, scaled, tv, device);
 						}
 					}
 
@@ -155,7 +162,8 @@ void processFrame(signal_callback_list_t *callbackList, struct can_frame *cf, st
 					{
 						value = extractSignal(cf->data, signal->startBit, signal->signalLength, (bool) signal->is_big_endian, signal->is_signed);
 						scaled = toPhysicalValue(value, signal->factor, signal->offset, signal->is_signed);
-						(callbackItem->callback)(signal->name, value, scaled, tv, device);
+						stringVal = Dbc_FindValueString(signal, value);
+						(callbackItem->callback)(signal->name, value, stringVal, scaled, tv, device);
 					}
 				}
 			}
@@ -168,8 +176,9 @@ void processFrame(signal_callback_list_t *callbackList, struct can_frame *cf, st
 						value = extractSignal(cf->data, callbackItem->signal->startBit, callbackItem->signal->signalLength, (bool) callbackItem->signal->is_big_endian,
 								callbackItem->signal->is_signed);
 						scaled = toPhysicalValue(value, callbackItem->signal->factor, callbackItem->signal->offset, callbackItem->signal->is_signed);
+						stringVal = Dbc_FindValueString(signal, value);
 						callbackItem->rawValue = value;
-						(callbackItem->callback)(callbackItem->signal->name, value, scaled, tv, device);
+						(callbackItem->callback)(callbackItem->signal->name, value, stringVal, scaled, tv, device);
 					}
 				}
 				else
@@ -179,8 +188,9 @@ void processFrame(signal_callback_list_t *callbackList, struct can_frame *cf, st
 						value = extractSignal(cf->data, callbackItem->signal->startBit, callbackItem->signal->signalLength, (bool) callbackItem->signal->is_big_endian,
 								callbackItem->signal->is_signed);
 						scaled = toPhysicalValue(value, callbackItem->signal->factor, callbackItem->signal->offset, callbackItem->signal->is_signed);
+						stringVal = Dbc_FindValueString(signal, value);
 						callbackItem->rawValue = value;
-						(callbackItem->callback)(callbackItem->signal->name, value, scaled, tv, device);
+						(callbackItem->callback)(callbackItem->signal->name, value, stringVal, scaled, tv, device);
 					}
 				}
 			}

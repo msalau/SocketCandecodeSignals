@@ -115,3 +115,13 @@ Trying to find: Frame: testFrame2
 (0000.000001) vcan0 secSig11: 0xffffffffffffff70 -144 
 (0000.000001) vcan0 secSig12: 0x0c 12 
 ```
+
+```
+echo "(0.0) vcan0 003#0100100100820100" | ./candecode ccl_test.dbc testFrame3
+```
+
+```
+Trying to find: Frame: testFrame3
+-- testFrame3 (0x003)
+(0000.000000) vcan0 valSig0: 0x01 "VALUE_1"
+```

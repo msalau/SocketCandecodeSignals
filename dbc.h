@@ -21,10 +21,11 @@ Section: Included Files
 Section: Definitions
 */
 
-#define DBC_MAX_LINE_SIZE     512
+#define DBC_MAX_LINE_SIZE     4096
 #define DBC_MAX_FRAME_NAME    80
 #define DBC_MAX_SENDER_NAME   128
 #define DBC_MAX_SIGNAL_NAME   80
+#define DBC_MAX_VALUE_NAME    80
 #define DBC_MAX_UNIT_NAME     80
 #define DBC_MAX_RECEIVER_LIST 256
 #define DBC_MAX_MUXLEN        4
@@ -49,6 +50,14 @@ typedef enum
 
 typedef struct
 {
+	char name[DBC_MAX_VALUE_NAME];
+	int32_t value;
+
+	UT_hash_handle hh;
+} Dbc_Value_t;
+
+typedef struct
+{
 	char name[DBC_MAX_SIGNAL_NAME];
 	int startBit;
 	int signalLength;
@@ -63,6 +72,7 @@ typedef struct
     uint8_t isMultiplexer;
     uint8_t muxId;
 	uint8_t number;
+	Dbc_Value_t *values;
 
 	UT_hash_handle hh;
 } Dbc_Signal_t;
@@ -104,6 +114,8 @@ Dbc_Frame_t *Dbc_FindFrameByName(Dbc_Frame_t *frame_list, char *name);
 Dbc_Frame_t *Dbc_FindFrameBySignalname(Dbc_Frame_t *frame_list, char *name);
 
 Dbc_Signal_t *Dbc_FindSignalByName(Dbc_Frame_t *frame, char *name);
+
+const char *Dbc_FindValueString(Dbc_Signal_t *signal, int32_t value);
 
 void Dbc_AddFrame(Dbc_Frame_t **db, int32_t canID, uint8_t dlc, char *frameName);
 void Dbc_AddSignal(

@@ -106,6 +106,18 @@ Dbc_Signal_t *Dbc_FindSignalByName(Dbc_Frame_t *frame, char *name)
     return NULL;
 }
 
+const char *Dbc_FindValueString(Dbc_Signal_t *signal, int32_t value)
+{
+    Dbc_Value_t *v;
+    HASH_FIND_INT(signal->values, &value, v);
+    if (NULL == v)
+    {
+        return NULL;
+    }
+
+    return v->name;
+}
+
 void Dbc_AddSignal(
     Dbc_Frame_t *frame_list, int32_t frameId,
     char *signalName, int startBit, int signalLength,
@@ -132,6 +144,7 @@ void Dbc_AddSignal(
     newSignal->offset = offset;
     newSignal->min = min;
     newSignal->max = max;
+    newSignal->values = NULL;
 
     if(isMultiplexer > 0)
     {
@@ -169,6 +182,84 @@ static int Dbc_ProcessStartBit(int byteOrder, int startBit, int signalLength)
     return startBit;
 }
 
+static void Dbc_ParseValues(Dbc_Frame_t **db, char *line)
+{
+    Dbc_Frame_t *frame;
+    Dbc_Signal_t *signal;
+
+    char *savePtr;
+    /* Extract frame id */
+    char *frameIdStr = strtok_r(&line[5], " \r\n", &savePtr);
+    int frameId;
+    int ret = sscanf(frameIdStr, "%d", &frameId);
+    if (1 != ret)
+    {
+        fprintf(stderr, "Failed to read frame id: %s\n", frameIdStr);
+        return;
+    }
+
+    /* Find the frame */
+    frame = Dbc_FindFrame(*db, frameId);
+    if (NULL == frame)
+    {
+        fprintf(stderr, "Failed to find a frame with id: %d\n", frameId);
+        return;
+    }
+
+    /* Extract signal name */
+    char *signalName = strtok_r(NULL, " \r\n", &savePtr);
+    /* Find the signal */
+    signal = Dbc_FindSignalByName(frame, signalName);
+
+    char *token = signalName;
+
+    for (;;)
+    {
+        /* Find numeric value */
+        token = strtok_r(NULL, " \r\n", &savePtr);
+        if (NULL == token)
+        {
+            /* No more values present, stop here */
+            break;
+        }
+        if (';' == *token)
+        {
+            /* Line terminator found, stop here */
+            break;
+        }
+        int value;
+        ret = sscanf(token, "%d", &value);
+        if (1 != ret)
+        {
+            fprintf(stderr, "Failed to parse value: '%s'\n", token);
+            return;
+        }
+
+        /* Find string value */
+        token = strtok_r(NULL, " \r\n", &savePtr);
+        if (NULL == token)
+        {
+            fprintf(stderr, "Failed to find a string token\n");
+            return;
+        }
+
+        Dbc_Value_t *newValue = malloc(sizeof(Dbc_Value_t));
+        strncpy(newValue->name, token, DBC_MAX_VALUE_NAME);
+        newValue->name[DBC_MAX_VALUE_NAME - 1] = '\0';
+        newValue->value = value;
+
+        HASH_ADD_INT(signal->values, value, newValue);
+
+        const int len = strlen(newValue->name);
+        if (';' == newValue->name[len - 1])
+        {
+            /* If we found a ';' symbol at the end - strip it and stop here */
+            newValue->name[len - 1] = '\0';
+            break;
+        }
+    }
+}
+
 int32_t Dbc_Init(Dbc_Frame_t **db, char *dbcFilePath)
 {
     char line[DBC_MAX_LINE_SIZE];
@@ -196,6 +287,11 @@ int32_t Dbc_Init(Dbc_Frame_t **db, char *dbcFilePath)
         {
             frameName[strlen(frameName) - 1] = '\0';  /* Remove last character ':' */
             Dbc_AddFrame(db, frameId, frameDlc, frameName);
+        }
+        /* Search for values */
+        else if (strncmp(line, "VAL_ ", 5) == 0)
+        {
+            Dbc_ParseValues(db, line);
         }
         /* Search for signals */
         else
@@ -258,11 +354,17 @@ void Dbc_DeInit(Dbc_Frame_t *db)
 {
     Dbc_Frame_t *frame, *frame_tmp;
     Dbc_Signal_t *signal, *signal_tmp;
+    Dbc_Value_t *value, *value_tmp;
 
     HASH_ITER(hh, db, frame, frame_tmp)
     {
         HASH_ITER(hh, frame->signals, signal, signal_tmp)
         {
+            HASH_ITER(hh, signal->values, value, value_tmp)
+            {
+                HASH_DEL(signal->values, value);
+                free(value);
+            }
             HASH_DEL(frame->signals, signal);
             free(signal);
         }
