@@ -38,7 +38,7 @@ BO_ 2 testFrame2: 8 TEST_ECU
 BO_ 3 testFrame3: 8 TEST_ECU
  SG_ valSig0 : 0|8@1+ (1,0) [0|255] "" CCL_TEST
 
-VAL_ 3 valSig0 0 "VALUE_0" 1 "VALUE_1" 2 "VALUE_2" ;
+VAL_ 3 valSig0 0 "VALUE_0" 1 "VALUE_1  "   2    "VALUE_2" ;
 
 
 

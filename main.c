@@ -33,7 +33,7 @@ void printCallback(char *name, __u64 rawValue, const char *stringValue, double s
 	}
 	else if (NULL != stringValue)
 	{
-		printf("(%04ld.%06ld) %s %s: 0x%02llx %s\n", tv.tv_sec, tv.tv_usec, device, name, rawValue, stringValue);
+		printf("(%04ld.%06ld) %s %s: 0x%02llx \"%s\"\n", tv.tv_sec, tv.tv_usec, device, name, rawValue, stringValue);
 	}
 	else
 	{

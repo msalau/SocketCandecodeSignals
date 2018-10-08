@@ -10,6 +10,8 @@ Section: Included Files
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include <ctype.h>
 
 #include "dbc.h"
 
@@ -236,11 +238,35 @@ static void Dbc_ParseValues(Dbc_Frame_t **db, char *line)
         }
 
         /* Find string value */
-        token = strtok_r(NULL, " \r\n", &savePtr);
+        token = strtok_r(NULL, "\"", &savePtr);
         if (NULL == token)
         {
             fprintf(stderr, "Failed to find a string token\n");
             return;
+        }
+
+        /* Check is the token composed solely of space characters */
+        bool spaces_only = true;
+        const char *c = token;
+        while (*c)
+        {
+            if (!isblank(*c))
+            {
+                spaces_only = false;
+                break;
+            }
+            c++;
+        }
+
+        /* Ignore the token with spaces only */
+        if (spaces_only)
+        {
+            token = strtok_r(NULL, "\"", &savePtr);
+            if (NULL == token)
+            {
+                fprintf(stderr, "Failed to find a string token\n");
+                return;
+            }
         }
 
         Dbc_Value_t *newValue = malloc(sizeof(Dbc_Value_t));
