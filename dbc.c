@@ -37,7 +37,7 @@ static int Dbc_ProcessStartBit(int byteOrder, int startBit, int signalLength);
 Section: Implementation
 */
 
-void Dbc_AddFrame(Dbc_Frame_t **db, int32_t canID, uint8_t dlc, char *frameName)
+void Dbc_AddFrame(Dbc_Frame_t **db, canid_t canID, uint8_t dlc, char *frameName)
 {
     Dbc_Frame_t *s;
 
@@ -52,7 +52,7 @@ void Dbc_AddFrame(Dbc_Frame_t **db, int32_t canID, uint8_t dlc, char *frameName)
     HASH_ADD_INT(*db, canID, s);
 }
 
-Dbc_Frame_t *Dbc_FindFrame(Dbc_Frame_t *frame_list, int canID)
+Dbc_Frame_t *Dbc_FindFrame(Dbc_Frame_t *frame_list, canid_t canID)
 {
     Dbc_Frame_t *s;
     HASH_FIND_INT(frame_list, &canID, s);

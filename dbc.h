@@ -79,7 +79,7 @@ typedef struct
 
 typedef struct
 {
-	int32_t canID;
+	canid_t canID;
 	uint8_t dlc;
 	char name[DBC_MAX_FRAME_NAME];
     uint8_t isMultiplexed;
@@ -109,7 +109,7 @@ int32_t Dbc_Init(Dbc_Frame_t **db, char *dbcFilePath);
  */
 void Dbc_DeInit(Dbc_Frame_t *db);
 
-Dbc_Frame_t *Dbc_FindFrame(Dbc_Frame_t *frame_list, int canID);
+Dbc_Frame_t *Dbc_FindFrame(Dbc_Frame_t *frame_list, canid_t canID);
 Dbc_Frame_t *Dbc_FindFrameByName(Dbc_Frame_t *frame_list, char *name);
 Dbc_Frame_t *Dbc_FindFrameBySignalname(Dbc_Frame_t *frame_list, char *name);
 
@@ -117,7 +117,7 @@ Dbc_Signal_t *Dbc_FindSignalByName(Dbc_Frame_t *frame, char *name);
 
 const char *Dbc_FindValueString(Dbc_Signal_t *signal, int32_t value);
 
-void Dbc_AddFrame(Dbc_Frame_t **db, int32_t canID, uint8_t dlc, char *frameName);
+void Dbc_AddFrame(Dbc_Frame_t **db, canid_t canID, uint8_t dlc, char *frameName);
 void Dbc_AddSignal(
     Dbc_Frame_t *frame_list, int32_t frameId,
     char *signalName, int startBit, int signalLength,

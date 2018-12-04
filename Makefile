@@ -1,6 +1,6 @@
 # compiler command and options
 CC = gcc
-CC_FLAGS = -Wall
+CC_FLAGS = -Wall -Wextra
 
 # Final binary
 BIN = candecode
