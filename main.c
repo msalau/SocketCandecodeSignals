@@ -25,19 +25,19 @@ Section: Definitions
 Section: Implementation
 */
 
-void printCallback(char *name, __u64 rawValue, const char *stringValue, double scaledValue, struct timeval tv, char *device)
+void printCallback(const char *frameName, const char *signalName, __u64 rawValue, const char *stringValue, double scaledValue, struct timeval tv, char *device)
 {
-	if (NULL == name)
+	if (NULL == signalName || NULL == frameName)
 	{
 		printf("(%04ld.%06ld) %s: Frame 0x%02llx not found\n", tv.tv_sec, tv.tv_usec, device, rawValue);
 	}
 	else if (NULL != stringValue)
 	{
-		printf("(%04ld.%06ld) %s %s: 0x%02llx \"%s\"\n", tv.tv_sec, tv.tv_usec, device, name, rawValue, stringValue);
+		printf("(%04ld.%06ld) %s %s.%s: 0x%02llx \"%s\"\n", tv.tv_sec, tv.tv_usec, device, frameName, signalName, rawValue, stringValue);
 	}
 	else
 	{
-		printf("(%04ld.%06ld) %s %s: 0x%02llx %f\n", tv.tv_sec, tv.tv_usec, device, name, rawValue, scaledValue);
+		printf("(%04ld.%06ld) %s %s.%s: 0x%02llx %f\n", tv.tv_sec, tv.tv_usec, device, frameName, signalName, rawValue, scaledValue);
 	}
 }
 
