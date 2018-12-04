@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 	if (argc < 2)
 	{
 		fprintf(stderr, "Usage:\n");
-		fprintf(stderr, "%s Database all  # processes all frames\n", argv[0]);
+		fprintf(stderr, "%s Database [all]  # processes all frames\n", argv[0]);
 		fprintf(stderr, "%s Database Message1.Signal1 [Message2.Signal2 Message3.Signal3]\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
@@ -71,6 +71,12 @@ int main(int argc, char **argv)
 	}
 	argc--;
 	argv++;
+
+	/* Decode all frames none were provided */
+	if (argc == 1)
+	{
+		process_all = 1;
+	}
 
 	/* Parse arguments (frames/signals which should be decoded) */
 	while (argc >= 2)
